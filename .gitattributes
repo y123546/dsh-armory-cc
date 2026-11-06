@@ -1,0 +1,2 @@
+*.patch -text
+apply-patches.mjs text eol=lf
