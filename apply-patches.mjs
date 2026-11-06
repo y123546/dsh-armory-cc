@@ -69,7 +69,7 @@ for (const name of patches) {
     console.log(`已应用过，跳过: ${name}`)
     continue
   }
-  const flags = ['apply', '--3way', ...(dryRun ? ['--check'] : []), file]
+  const flags = ['apply', '--3way', '--ignore-whitespace', '--whitespace=nowarn', ...(dryRun ? ['--check'] : []), file]
   const result = runQuiet('git', flags)
   if (result.ok) {
     console.log(`${dryRun ? '可以应用' : '已应用'}: ${name}`)
