@@ -1,2 +1,4 @@
 *.patch -text
+.githooks/* text eol=lf
 apply-patches.mjs text eol=lf
+*.bat text eol=crlf
