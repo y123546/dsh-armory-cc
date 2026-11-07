@@ -3,7 +3,19 @@
 本仓库发布的是构建产物 `lib/`，上游每次发版都会重建同名文件，所以本地改动
 （见下面清单）在同步上游之后需要**重新应用**。补丁就放在这个目录里。
 
-## 升级流程
+## 自动重放（推荐，一次配置）
+
+```bat
+启用自动重打补丁.bat          :: 等价于 git config core.hooksPath .githooks
+```
+
+配置一次之后，`.githooks/post-merge` 会在**任何合并结束时**自动跑
+`apply-patches.mjs`：`git pull`、`git merge upstream/main`，以及 GitHub 网页上
+「Sync fork」之后本地 pull，都算。已应用过的补丁会自动跳过，不会重复乱改。
+
+rebase / amend 走 `.githooks/post-rewrite`，同样自动。
+
+## 手动方式
 
 ```bash
 git remote add upstream https://github.com/2026heshao/dsh-armory.git   # 只需一次
@@ -12,6 +24,9 @@ node apply-patches.mjs --sync    # 拉取并合并上游，然后重放全部补
 node apply-patches.mjs --check   # 只检查补丁能否干净应用
 node apply-patches.mjs           # 重放补丁（不合上游）
 ```
+
+Windows 上双击 `重打补丁.bat` / `同步上游并重打.bat` 也行，脚本会自己找 node
+（先找 PATH，再退回 DSH 自带的运行时）。
 
 合并冲突时脚本会停下并打印 git 的输出，按提示手工解决后再运行不带 `--sync`
 的那条。
