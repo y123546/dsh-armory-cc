@@ -3,3 +3,6 @@ node_modules/
 *.log
 # 宣传片制作素材（本地资产，不进仓库）
 promo-*/
+
+# npm pack output (built locally, never committed)
+*.tgz
