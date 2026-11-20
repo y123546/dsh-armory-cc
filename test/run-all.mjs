@@ -18,6 +18,27 @@ const SUITES = [
   // 不碰真实 profile、不联网，放最前面让基础层先过。
   { name: "tool-ledger（工具账本：zstd/缓存/尺寸闸门）", file: "tool-ledger.mjs" },
   { name: "mcp-config（MCP 配置归一化与 patch 往返）", file: "mcp-config.mjs" },
+  // 配置值展示归一（issue #16）：外部 bundle 注入的行，`command: !!js …` 在 loader 里
+  // 是未求值对象 `{ __jsExpr }`，旧 summarize() 直通 → 浏览器把它当 React 子节点 →
+  // React #31，整块 MCP 面板变「这个面板加载失败」。纯函数四形态 + 接线源码针 +
+  // 反向自测（旧写法必须仍然坏），零网络零写盘。
+  { name: "mcp-js-expr-config（!!js 未求值对象不得直通渲染层 / React #31）", file: "mcp-js-expr-config.mjs" },
+  // 工具调用超时（issue #19）：大数值超过 Node 定时器 2^31-1 上限会被钳成 1ms，
+  // 每个工具调用立即 REQUEST_TIMEOUT。写入边界封顶 + 0=永不超时（映射为上限），
+  // 服务端真跑 + 表单源码针 + 反向自测，零网络零写盘。
+  { name: "mcp-tool-timeout（工具调用超时封顶与 0=永不超时）", file: "mcp-tool-timeout.mjs" },
+  // 官方 mcp-manager（issue #23）：DSH 0.2.2-rc.2 起 server 由 manager 挂成子实例、不是
+  // loader 条目，旧数据源让面板恒空、工具账本把它们记成内置工具。钉只读投影、状态映射、
+  // 工具归属与写动作报错，含反向自测；全程替身 ctx，不读真实 profile。
+  { name: "mcp-manager-servers（官方 mcp-manager 托管服务器的只读投影）", file: "mcp-manager-servers.mjs" },
+  // 服务键冲突（issue #18）：DSH 0.2.2-rc.2 起官方 mcp-manager 占用 cordis 服务
+  // "mcpManager"，armory 继续同名注册会让其中一方整条 fiber 失败。用真 cordis 证明
+  // 「服务键 armoryMcp + namespace mcpManager」可共存，并钉住三处契约与官方方法不撞名。
+  { name: "service-key-conflict（与官方 mcp-manager 的服务键冲突）", file: "service-key-conflict.mjs" },
+  // 技能看板渲染层文本归一（issue #17，与 #11 同类数据）：注册表的 description /
+  // whenToUse 可能是本地化对象，直接当 React 子节点会把整块看板打成「这个面板加载失败」。
+  // 钉住六个渲染点必须过 textOf + 旧写法不得复活（含反向自测）。
+  { name: "skill-board-render-text（技能看板：描述类字段必须归一后渲染）", file: "skill-board-render-text.mjs" },
   // 契约三处一致性（护栏）：面板可调方法必须同时出现在 typert.js 声明、client.js 契约数组、
   // index.js 宿主方法集。历史上 toolTailor、installInfo 各漏一处就是恒 404；运行时解析三份
   // 源码做差集，不硬编码方法名（client.js 在持续演进）。
@@ -43,6 +64,10 @@ const SUITES = [
   // 整个入口（「点一下就消失」）；主菜单宽度按 128 兜底且只算一次，异步清单到位后
   // 右缘伸出视口。直测 textOf / quickItemDesc / quickMenuLeft，并含两条反向自测。
   { name: "quick-menu-guards（召唤菜单文本归一与一级菜单定位）", file: "quick-menu-guards.mjs" },
+  // 召唤菜单首帧快照（issue #17）：新会话第一次点开菜单会先画三条骨架条再换成真实条目。
+  // 用上一次的清单快照当初始值消掉这次闪动；这里直测快照裁剪、结构校验、读写闭环与
+  // localStorage 不可用时的安静失败，并配「不裁剪就超限」的反向自测。
+  { name: "quick-menu-snapshot（召唤菜单首帧快照：裁剪 / 校验 / 读写闭环）", file: "quick-menu-snapshot.mjs" },
   { name: "expert-manual（专家市场写链）", file: "run-expert-manual.mjs" },
   { name: "upgrade-plan（一键升级判据）", file: "upgrade-plan.mjs" },
   { name: "session-persona（会话级专家随时挂/换/摘）", file: "session-persona.mjs" },
@@ -52,6 +77,10 @@ const SUITES = [
   // 专家人设取数链（issue #5）：上游 43% 的专家没有公开分发人设文件（404）。
   // 覆盖优先 → 本机缓存 → CDN → 标注过的兜底人设，任何情况下都不静默产出空人设。
   { name: "expert-persona-source（人设取数链：覆盖 / 本机缓存 / CDN / 兜底）", file: "expert-persona-source.mjs" },
+  // 本机自建专家（issue #15）：WorkBuddy 固定目录 plugins/marketplaces/my-experts/plugins。
+  // 临时目录造四个包（完整 / 缺展示字段 / 清单损坏 / 头像超限+路径穿越），断言能读的读出来、
+  // 读不出的计入 skipped、人设缺失必须抛错、local-- 命名空间让「同名市场专家 + 本地专家」并存。
+  { name: "expert-local（自建专家：目录扫描 / 投影 / 命名空间 / 越界防护）", file: "expert-local.mjs" },
   // 真机验证：读真实 profile manifest，证明判定对真数据成立。profile 不存在时
   // 该文件会自行 SKIP（其它机器 / CI 上跑不出结论，但不会误报失败）。
   { name: "verify-install-info（真 profile 数据）", file: "verify-install-info.mjs" },
@@ -128,6 +157,9 @@ const SUITES = [
   // 的三层回落（目录缓存 → 预设行自带名 → 标识名）。含前缀常量写读同源 + 与 client.js
   // 匹配串逐字一致，另配 2 条反向自测。全程离线，不碰真实 ~/.dsh。
   { name: "expert-display-name（召唤菜单专家显示名三层回落）", file: "expert-display-name.mjs" },
+  // 当前宿主取消 /list-agents 子入口：写链不得复活旧行，主入口和其他工具必须保留。
+  // 临时包真跑 Node exports 解析 + 旧入口反向自测，不将组合树通过冒充完整宿主挂载。
+  { name: "expert-preset-entries（专家预设：失效子入口与主入口保留）", file: "expert-preset-entries.mjs" },
   // ── T01 共享数据层（多市场注册表 / 安装状态 / 认证注入规则）───────────────
   // 三个模块只用本机内置模块、零网络、零真实 ~/.dsh（隔离靠 mkdtemp + rootDir 注入），
   // 注册表还把「内置 connectors 源 URL 与 lib/wb-market.js 现值一致」钉进了用例。
@@ -154,11 +186,23 @@ const SUITES = [
   // 根目录自身与 `..` 穿越、跨来源根、缺 SKILL.md、符号链接只删链接 / 祖先链接逃逸。
   // 全部落在 mkdtemp 下（home / cwd 注入），零网络、绝不碰真实 ~/.agents 或 ~/.dsh。
   { name: "skill-remove（已安装 skill 卸载：来源白名单与路径边界）", file: "skill-remove.mjs" },
+  // 启停开关的链接警告数据层（lib/skill-links.js）：目录 / 清单 / 祖先目录经过链接时
+  // 必须识别为 linked，并给出共享源 realpath；相对 / 空 / 不存在路径一律 false，不报假警告。
+  // Windows 用 junction（无需管理员），mkdtemp 隔离，含一条反向自测。
+  { name: "skill-links（启停开关：符号链接共享源判定）", file: "skill-links.mjs" },
+  // 启停开关的看板接线：卡片 / 列表 / 详情三处入口、四类来源 + 磁盘 path 闸门、
+  // 乐观更新回滚、已禁用筛选、后端 linked 字段与 i18n。含两条反向自测。
+  { name: "skill-disable-ui（启停开关：三处入口/来源闸门/回滚/筛选）", file: "skill-disable-ui.mjs" },
   // 技能禁用数据层（lib/skill-disable.js）：工具裁缝「禁用 / 释放」的落盘点，写的是用户
   // 的 SKILL.md。用例重点同样是「不能写什么」——来源白名单、根目录边界、形态校验
   // （缺 frontmatter / BOM / 非 .md）、符号链接（根外拒绝、根内写 realpath 不动链接），
   // 外加纯函数的 frontmatter 手术（插入/收敛/移除、CRLF、幂等）与写入结果的 yaml 复核。
   { name: "skill-disable（技能禁用/释放：frontmatter 标志与写盘闸门）", file: "skill-disable.mjs" },
+  // issue #22：市场安装的 SKILL.md 若 frontmatter name 不是 kebab-case（中文 / 大写 /
+  // 空格 / 下划线），宿主注册表整条丢弃——面板亮「已安装」，模型和 /菜单永远看不到。
+  // 安装落盘前在 staging 内归一为 slug（保留原名到 displayName），不可救的包明确拒绝；
+  // 撞名走 namespace 前缀。-2 后缀。含拒绝码、幂等、CRLF/BOM 与撞名真跑（mkdtemp 隔离）。
+  { name: "skill-manifest-name（市场安装：清单名归一 / 不可救包拒绝 / 撞名）", file: "skill-manifest-name.mjs" },
   // Skill 集合变更的跨组件实时刷新（QA）：市场装/卸后顶部角标与看板列表必须立刻对齐。
   // 缺口来自「角标只在 McpBoardPage 首次挂载读一次」，普通静态断言看不见——这里把变更
   // 总线与角标重取函数抽进 vm 真跑（reason 透传 / 抛错隔离 / 退订 / 乱序守卫），并钉住
@@ -263,11 +307,13 @@ const SUITES = [
   { name: "loadout（装备清单：字段白名单/差异三态/体积与条数上限）", file: "loadout.mjs" },
   // ── 安装浮层（顶部轻提示）──
   // 守两件事：(1) 浮层节点挂在 document.body 的模块级单例上，面板卸载/切标签页后
-  // 进度仍然可见（挂回组件子树就退化成「切窗口就没了」）；(2) 结果态 4.2s 后自己
-  // 收起、行数封顶 3、同一插件不许并发重复装（isInstallRunning 供按钮禁用）。
+  // 进度仍然可见（挂回组件子树就退化成「切窗口就没了」）；(2) 成功 4.2s 后收起，
+  // 失败保留到手动关闭且可复制原因；行数封顶 3，同一插件不许并发重复装。
   // 做法是从 lib/client.js 抽浮层一节的源码放进 node:vm 真跑，配最小 DOM 替身，
   // 起止标记找不到直接失败，避免悄悄测个空。
-  { name: "install-toast（顶部安装浮层：跨卸载可见 + 自动淡出 + 防重复安装）", file: "install-toast.mjs" },
+  { name: "install-toast（顶部安装浮层：成功淡出/失败保留与复制/防重复）", file: "install-toast.mjs" },
+  { name: "market-feedback（市场错误空态互斥/全部已装跳转/逐台重连）", file: "market-feedback.mjs" },
+  { name: "market-action-guards（卸载确认/旧批次守卫/弹层错误/详情按钮）", file: "market-action-guards.mjs" },
   // ── 市场插件 README 预览 ──
   // 守三件事：(1) parseGithubRepo 十种仓库写法口径；(2) wbAwesomeReadme 无来源时零请求快速失败；
   // (3) 客户端 Markdown 渲染器结构 + 安全边界——javascript: 伪链接必须降级成纯文本

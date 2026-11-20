@@ -6,3 +6,6 @@ promo-*/
 
 # npm pack output (built locally, never committed)
 *.tgz
+
+# 本地生成/下载的封面与配图（不属于插件产物）
+vibe_images/
